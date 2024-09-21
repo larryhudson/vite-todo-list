@@ -29,9 +29,7 @@ function App() {
   }
 
   useEffect(() => {
-    if (todos.length > 0) {
-      saveTodosToLocalStorage(todos)
-    }
+    saveTodosToLocalStorage(todos)
   }, [todos])
 
   const addTodo = (e: React.FormEvent<HTMLFormElement>) => {
@@ -78,6 +76,9 @@ function App() {
   const deleteTodo = (id: number) => {
     const newTodos = todos.filter(todo => todo.id !== id)
     setTodos(newTodos)
+    if (newTodos.length === 0) {
+      localStorage.removeItem('todos')
+    }
   }
 
   return (
