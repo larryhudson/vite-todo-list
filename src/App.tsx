@@ -1,35 +1,61 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
 
+interface Todo {
+  id: number;
+  text: string;
+  completed: boolean;
+}
+
 function App() {
-  const [count, setCount] = useState(0)
+  const [todos, setTodos] = useState<Todo[]>([])
+  const [newTodo, setNewTodo] = useState('')
+
+  const addTodo = () => {
+    if (newTodo.trim() !== '') {
+      setTodos([...todos, { id: Date.now(), text: newTodo, completed: false }])
+      setNewTodo('')
+    }
+  }
+
+  const toggleTodo = (id: number) => {
+    setTodos(todos.map(todo =>
+      todo.id === id ? { ...todo, completed: !todo.completed } : todo
+    ))
+  }
+
+  const deleteTodo = (id: number) => {
+    setTodos(todos.filter(todo => todo.id !== id))
+  }
 
   return (
-    <>
+    <div className="App">
+      <h1>To-Do List</h1>
       <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+        <input
+          type="text"
+          value={newTodo}
+          onChange={(e) => setNewTodo(e.target.value)}
+          placeholder="Add a new todo"
+        />
+        <button onClick={addTodo}>Add</button>
       </div>
-      <h1>Vite + React</h1>
-      <h2>Hello, World!</h2>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+      <ul>
+        {todos.map(todo => (
+          <li key={todo.id}>
+            <input
+              type="checkbox"
+              checked={todo.completed}
+              onChange={() => toggleTodo(todo.id)}
+            />
+            <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
+              {todo.text}
+            </span>
+            <button onClick={() => deleteTodo(todo.id)}>Delete</button>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 
