@@ -89,12 +89,20 @@ function App() {
       const [draggedItem] = groupTodos.splice(dragIndex, 1);
       groupTodos.splice(hoverIndex, 0, draggedItem);
       
-      const updatedTodos = newTodos.map(todo => {
-        const index = groupTodos.findIndex(t => t.id === todo.id);
-        return index !== -1 ? groupTodos[index] : todo;
+      // Create a map of todo IDs to their new positions within the group
+      const todoPositions = new Map(groupTodos.map((todo, index) => [todo.id, index]));
+      
+      // Update the order of todos in the original array
+      newTodos.sort((a, b) => {
+        const posA = todoPositions.get(a.id);
+        const posB = todoPositions.get(b.id);
+        if (posA !== undefined && posB !== undefined) {
+          return posA - posB;
+        }
+        return 0;
       });
       
-      return updatedTodos;
+      return newTodos;
     });
   }, []);
 
