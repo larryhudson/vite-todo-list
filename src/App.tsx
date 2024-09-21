@@ -11,7 +11,8 @@ function App() {
   const [todos, setTodos] = useState<Todo[]>([])
   const [newTodo, setNewTodo] = useState('')
 
-  const addTodo = () => {
+  const addTodo = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
     if (newTodo.trim() !== '') {
       setTodos([...todos, { id: Date.now(), text: newTodo, completed: false }])
       setNewTodo('')
@@ -31,15 +32,15 @@ function App() {
   return (
     <div className="App">
       <h1>To-Do List</h1>
-      <div>
+      <form onSubmit={addTodo}>
         <input
           type="text"
           value={newTodo}
           onChange={(e) => setNewTodo(e.target.value)}
           placeholder="Add a new todo"
         />
-        <button onClick={addTodo}>Add</button>
-      </div>
+        <button type="submit">Add</button>
+      </form>
       <ul>
         {todos.map(todo => (
           <li key={todo.id}>
