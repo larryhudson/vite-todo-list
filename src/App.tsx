@@ -73,54 +73,66 @@ function App() {
         />
         <button type="submit">Add</button>
       </form>
-      <h2>Today</h2>
-      <ul>
-        {todayTodos.map(todo => (
-          <li key={todo.id}>
-            <input
-              type="checkbox"
-              checked={todo.completed}
-              onChange={() => toggleTodo(todo.id)}
-            />
-            <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
-              {todo.text} (Due: {todo.dueDate.toLocaleDateString()})
-            </span>
-            <button onClick={() => deleteTodo(todo.id)}>Delete</button>
-          </li>
-        ))}
-      </ul>
-      <h2>Tomorrow</h2>
-      <ul>
-        {tomorrowTodos.map(todo => (
-          <li key={todo.id}>
-            <input
-              type="checkbox"
-              checked={todo.completed}
-              onChange={() => toggleTodo(todo.id)}
-            />
-            <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
-              {todo.text} (Due: {todo.dueDate.toLocaleDateString()})
-            </span>
-            <button onClick={() => deleteTodo(todo.id)}>Delete</button>
-          </li>
-        ))}
-      </ul>
-      <h2>Upcoming</h2>
-      <ul>
-        {upcomingTodos.map(todo => (
-          <li key={todo.id}>
-            <input
-              type="checkbox"
-              checked={todo.completed}
-              onChange={() => toggleTodo(todo.id)}
-            />
-            <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
-              {todo.text} (Due: {todo.dueDate.toLocaleDateString()})
-            </span>
-            <button onClick={() => deleteTodo(todo.id)}>Delete</button>
-          </li>
-        ))}
-      </ul>
+      {todayTodos.length > 0 && (
+        <>
+          <h2>Today</h2>
+          <ul>
+            {todayTodos.map(todo => (
+              <li key={todo.id}>
+                <input
+                  type="checkbox"
+                  checked={todo.completed}
+                  onChange={() => toggleTodo(todo.id)}
+                />
+                <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
+                  {todo.text} (Due: {todo.dueDate.toLocaleDateString()})
+                </span>
+                <button onClick={() => deleteTodo(todo.id)}>Delete</button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {tomorrowTodos.length > 0 && (
+        <>
+          <h2>Tomorrow</h2>
+          <ul>
+            {tomorrowTodos.map(todo => (
+              <li key={todo.id}>
+                <input
+                  type="checkbox"
+                  checked={todo.completed}
+                  onChange={() => toggleTodo(todo.id)}
+                />
+                <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
+                  {todo.text} (Due: {todo.dueDate.toLocaleDateString()})
+                </span>
+                <button onClick={() => deleteTodo(todo.id)}>Delete</button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {upcomingTodos.length > 0 && (
+        <>
+          <h2>Upcoming</h2>
+          <ul>
+            {upcomingTodos.map(todo => (
+              <li key={todo.id}>
+                <input
+                  type="checkbox"
+                  checked={todo.completed}
+                  onChange={() => toggleTodo(todo.id)}
+                />
+                <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
+                  {todo.text} (Due: {todo.dueDate.toLocaleDateString()})
+                </span>
+                <button onClick={() => deleteTodo(todo.id)}>Delete</button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </div>
   )
 }
