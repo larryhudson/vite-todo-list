@@ -9,10 +9,6 @@ interface Todo {
 }
 
 function App() {
-  const [todos, setTodos] = useState<Todo[]>([])
-  const [newTodo, setNewTodo] = useState('')
-  const [dueDate, setDueDate] = useState<string>(new Date().toISOString().split('T')[0])
-
   const loadTodosFromLocalStorage = (): Todo[] => {
     const storedTodos = localStorage.getItem('todos')
     if (storedTodos) {
@@ -24,16 +20,18 @@ function App() {
     return []
   }
 
+  const [todos, setTodos] = useState<Todo[]>(loadTodosFromLocalStorage())
+  const [newTodo, setNewTodo] = useState('')
+  const [dueDate, setDueDate] = useState<string>(new Date().toISOString().split('T')[0])
+
   const saveTodosToLocalStorage = (todos: Todo[]) => {
     localStorage.setItem('todos', JSON.stringify(todos))
   }
 
   useEffect(() => {
-    setTodos(loadTodosFromLocalStorage())
-  }, [])
-
-  useEffect(() => {
-    saveTodosToLocalStorage(todos)
+    if (todos.length > 0) {
+      saveTodosToLocalStorage(todos)
+    }
   }, [todos])
 
   const addTodo = (e: React.FormEvent<HTMLFormElement>) => {
