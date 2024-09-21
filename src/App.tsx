@@ -3,7 +3,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautif
 import './App.css'
 
 interface Todo {
-  id: number;
+  id: string;
   text: string;
   completed: boolean;
   dueDate: Date;
@@ -15,6 +15,7 @@ function App() {
     if (storedTodos) {
       return JSON.parse(storedTodos).map((todo: Todo) => ({
         ...todo,
+        id: todo.id.toString(),
         dueDate: new Date(todo.dueDate)
       }))
     }
@@ -96,7 +97,7 @@ function App() {
   const addTodo = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (newTodo.trim() !== '') {
-      const newTodos = [...todos, { id: Date.now(), text: newTodo, completed: false, dueDate: new Date(dueDate) }]
+      const newTodos = [...todos, { id: Date.now().toString(), text: newTodo, completed: false, dueDate: new Date(dueDate) }]
       setTodos(newTodos)
       setNewTodo('')
       setDueDate(new Date().toISOString().split('T')[0])
@@ -127,14 +128,14 @@ function App() {
   const tomorrowTodos = todos.filter(todo => isTomorrow(todo.dueDate))
   const upcomingTodos = todos.filter(todo => !isDueOrOverdue(todo) && !isTomorrow(todo.dueDate))
 
-  const toggleTodo = (id: number) => {
+  const toggleTodo = (id: string) => {
     const newTodos = todos.map(todo =>
       todo.id === id ? { ...todo, completed: !todo.completed } : todo
     )
     setTodos(newTodos)
   }
 
-  const deleteTodo = (id: number) => {
+  const deleteTodo = (id: string) => {
     const newTodos = todos.filter(todo => todo.id !== id)
     setTodos(newTodos)
     if (newTodos.length === 0) {
