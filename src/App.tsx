@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 
 interface Todo {
@@ -13,10 +13,34 @@ function App() {
   const [newTodo, setNewTodo] = useState('')
   const [dueDate, setDueDate] = useState<string>(new Date().toISOString().split('T')[0])
 
+  const loadTodosFromLocalStorage = (): Todo[] => {
+    const storedTodos = localStorage.getItem('todos')
+    if (storedTodos) {
+      return JSON.parse(storedTodos).map((todo: Todo) => ({
+        ...todo,
+        dueDate: new Date(todo.dueDate)
+      }))
+    }
+    return []
+  }
+
+  const saveTodosToLocalStorage = (todos: Todo[]) => {
+    localStorage.setItem('todos', JSON.stringify(todos))
+  }
+
+  useEffect(() => {
+    setTodos(loadTodosFromLocalStorage())
+  }, [])
+
+  useEffect(() => {
+    saveTodosToLocalStorage(todos)
+  }, [todos])
+
   const addTodo = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (newTodo.trim() !== '') {
-      setTodos([...todos, { id: Date.now(), text: newTodo, completed: false, dueDate: new Date(dueDate) }])
+      const newTodos = [...todos, { id: Date.now(), text: newTodo, completed: false, dueDate: new Date(dueDate) }]
+      setTodos(newTodos)
       setNewTodo('')
       setDueDate(new Date().toISOString().split('T')[0])
     }
@@ -47,13 +71,15 @@ function App() {
   const upcomingTodos = todos.filter(todo => !isDueOrOverdue(todo) && !isTomorrow(todo.dueDate))
 
   const toggleTodo = (id: number) => {
-    setTodos(todos.map(todo =>
+    const newTodos = todos.map(todo =>
       todo.id === id ? { ...todo, completed: !todo.completed } : todo
-    ))
+    )
+    setTodos(newTodos)
   }
 
   const deleteTodo = (id: number) => {
-    setTodos(todos.filter(todo => todo.id !== id))
+    const newTodos = todos.filter(todo => todo.id !== id)
+    setTodos(newTodos)
   }
 
   return (
