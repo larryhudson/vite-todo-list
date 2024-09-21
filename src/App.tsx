@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 
 interface Todo {
@@ -12,6 +12,20 @@ function App() {
   const [todos, setTodos] = useState<Todo[]>([])
   const [newTodo, setNewTodo] = useState('')
   const [dueDate, setDueDate] = useState<string>(new Date().toISOString().split('T')[0])
+  const [darkMode, setDarkMode] = useState<boolean>(false)
+
+  useEffect(() => {
+    const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+    setDarkMode(prefersDarkMode)
+  }, [])
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light')
+  }, [darkMode])
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode)
+  }
 
   const addTodo = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -58,6 +72,9 @@ function App() {
 
   return (
     <div className="App">
+      <button className="dark-mode-toggle" onClick={toggleDarkMode}>
+        {darkMode ? '☀️' : '🌙'}
+      </button>
       <h1>To-Do List</h1>
       <form onSubmit={addTodo}>
         <input
