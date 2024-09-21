@@ -80,6 +80,9 @@ function App() {
 
   const moveItem = useCallback((sourceGroup: 'today' | 'tomorrow' | 'upcoming', targetGroup: 'today' | 'tomorrow' | 'upcoming', dragIndex: number, hoverIndex: number) => {
     setTodos((prevTodos) => {
+      console.log('moveItem called:', { sourceGroup, targetGroup, dragIndex, hoverIndex });
+      console.log('Previous todos:', prevTodos);
+
       const newTodos = [...prevTodos];
       let sourceTodos: Todo[];
       let targetTodos: Todo[];
@@ -100,7 +103,21 @@ function App() {
         targetTodos = newTodos.filter(todo => !isDueOrOverdue(todo) && !isTomorrow(todo.dueDate));
       }
 
+      console.log('Source todos:', sourceTodos);
+      console.log('Target todos:', targetTodos);
+
+      if (dragIndex < 0 || dragIndex >= sourceTodos.length) {
+        console.error('Invalid dragIndex:', dragIndex);
+        return prevTodos;
+      }
+
       const [draggedItem] = sourceTodos.splice(dragIndex, 1);
+      console.log('Dragged item:', draggedItem);
+
+      if (!draggedItem) {
+        console.error('Dragged item is undefined');
+        return prevTodos;
+      }
 
       // Update the due date based on the target group
       const today = new Date();
@@ -116,17 +133,22 @@ function App() {
         draggedItem.dueDate = nextWeek;
       }
 
+      console.log('Updated dragged item:', draggedItem);
+
       targetTodos.splice(hoverIndex, 0, draggedItem);
 
       // Update the order of todos in the original array
-      return newTodos.map(todo => {
+      const updatedTodos = newTodos.map(todo => {
         if (todo.id === draggedItem.id) {
           return draggedItem;
         }
         return todo;
       });
+
+      console.log('Updated todos:', updatedTodos);
+      return updatedTodos;
     });
-  }, []);
+  }, [isDueOrOverdue, isTomorrow]);
 
   useEffect(() => {
     const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
