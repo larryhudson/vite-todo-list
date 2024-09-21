@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './App.css'
 
 interface Todo {
@@ -24,11 +24,45 @@ function App() {
   const [newTodo, setNewTodo] = useState('')
   const [dueDate, setDueDate] = useState<string>(new Date().toISOString().split('T')[0])
   const [darkMode, setDarkMode] = useState<boolean>(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
     setDarkMode(prefersDarkMode)
   }, [])
+
+  const exportTodos = () => {
+    const dataStr = JSON.stringify(todos)
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr)
+    const exportFileDefaultName = 'todos.json'
+    const linkElement = document.createElement('a')
+    linkElement.setAttribute('href', dataUri)
+    linkElement.setAttribute('download', exportFileDefaultName)
+    linkElement.click()
+  }
+
+  const importTodos = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const content = e.target?.result
+        if (typeof content === 'string') {
+          try {
+            const importedTodos = JSON.parse(content).map((todo: Todo) => ({
+              ...todo,
+              dueDate: new Date(todo.dueDate)
+            }))
+            setTodos(importedTodos)
+          } catch (error) {
+            console.error('Error parsing JSON:', error)
+            alert('Invalid JSON file')
+          }
+        }
+      }
+      reader.readAsText(file)
+    }
+  }
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light')
@@ -101,6 +135,17 @@ function App() {
         {darkMode ? '☀️' : '🌙'}
       </button>
       <h1>To-Do List</h1>
+      <div className="import-export-buttons">
+        <button onClick={exportTodos}>Export Todos</button>
+        <button onClick={() => fileInputRef.current?.click()}>Import Todos</button>
+        <input
+          type="file"
+          ref={fileInputRef}
+          style={{ display: 'none' }}
+          onChange={importTodos}
+          accept=".json"
+        />
+      </div>
       <form onSubmit={addTodo}>
         <input
           type="text"
