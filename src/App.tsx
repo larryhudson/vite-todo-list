@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
-import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { DndProvider, useDrag, useDrop } from 'react-dnd'
+import { HTML5Backend } from 'react-dnd-html5-backend'
 import './App.css'
 
 interface Todo {
@@ -7,6 +8,50 @@ interface Todo {
   text: string;
   completed: boolean;
   dueDate: Date;
+}
+
+interface DraggableItemProps {
+  id: string;
+  index: number;
+  moveItem: (dragIndex: number, hoverIndex: number) => void;
+  children: React.ReactNode;
+}
+
+const DraggableItem: React.FC<DraggableItemProps> = ({ id, index, moveItem, children }) => {
+  const ref = useRef<HTMLLIElement>(null)
+
+  const [, drop] = useDrop({
+    accept: 'TODO',
+    hover(item: { id: string; index: number }, monitor) {
+      if (!ref.current) {
+        return
+      }
+      const dragIndex = item.index
+      const hoverIndex = index
+      if (dragIndex === hoverIndex) {
+        return
+      }
+      moveItem(dragIndex, hoverIndex)
+      item.index = hoverIndex
+    },
+  })
+
+  const [{ isDragging }, drag, preview] = useDrag({
+    type: 'TODO',
+    item: () => ({ id, index }),
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  })
+
+  drag(drop(ref))
+
+  return (
+    <li ref={preview} style={{ opacity: isDragging ? 0.5 : 1 }}>
+      <span ref={ref} className="drag-handle">☰</span>
+      {children}
+    </li>
+  )
 }
 
 function App() {
@@ -28,17 +73,15 @@ function App() {
   const [darkMode, setDarkMode] = useState<boolean>(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const onDragEnd = (result: DropResult) => {
-    if (!result.destination) {
-      return;
-    }
-
-    const items = Array.from(todos);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-
-    setTodos(items);
-  }
+  const moveItem = useCallback((dragIndex: number, hoverIndex: number) => {
+    setTodos((prevTodos) => {
+      const newTodos = [...prevTodos];
+      const draggedItem = newTodos[dragIndex];
+      newTodos.splice(dragIndex, 1);
+      newTodos.splice(hoverIndex, 0, draggedItem);
+      return newTodos;
+    });
+  }, []);
 
   useEffect(() => {
     const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -174,99 +217,68 @@ function App() {
         />
         <button type="submit">Add</button>
       </form>
-      <DragDropContext onDragEnd={onDragEnd}>
-        <Droppable droppableId="todos">
-          {(provided) => (
-            <div {...provided.droppableProps} ref={provided.innerRef}>
-              {todayTodos.length > 0 && (
-                <>
-                  <h2>Today</h2>
-                  <ul>
-                    {todayTodos.map((todo, index) => (
-                      <Draggable key={todo.id} draggableId={todo.id.toString()} index={index}>
-                        {(provided) => (
-                          <li
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={todo.completed}
-                              onChange={() => toggleTodo(todo.id)}
-                            />
-                            <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
-                              {todo.text} (Due: {todo.dueDate.toLocaleDateString()})
-                            </span>
-                            <button onClick={() => deleteTodo(todo.id)}>Delete</button>
-                          </li>
-                        )}
-                      </Draggable>
-                    ))}
-                  </ul>
-                </>
-              )}
-              {tomorrowTodos.length > 0 && (
-                <>
-                  <h2>Tomorrow</h2>
-                  <ul>
-                    {tomorrowTodos.map((todo, index) => (
-                      <Draggable key={todo.id} draggableId={todo.id.toString()} index={index + todayTodos.length}>
-                        {(provided) => (
-                          <li
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={todo.completed}
-                              onChange={() => toggleTodo(todo.id)}
-                            />
-                            <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
-                              {todo.text} (Due: {todo.dueDate.toLocaleDateString()})
-                            </span>
-                            <button onClick={() => deleteTodo(todo.id)}>Delete</button>
-                          </li>
-                        )}
-                      </Draggable>
-                    ))}
-                  </ul>
-                </>
-              )}
-              {upcomingTodos.length > 0 && (
-                <>
-                  <h2>Upcoming</h2>
-                  <ul>
-                    {upcomingTodos.map((todo, index) => (
-                      <Draggable key={todo.id} draggableId={todo.id.toString()} index={index + todayTodos.length + tomorrowTodos.length}>
-                        {(provided) => (
-                          <li
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={todo.completed}
-                              onChange={() => toggleTodo(todo.id)}
-                            />
-                            <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
-                              {todo.text} (Due: {todo.dueDate.toLocaleDateString()})
-                            </span>
-                            <button onClick={() => deleteTodo(todo.id)}>Delete</button>
-                          </li>
-                        )}
-                      </Draggable>
-                    ))}
-                  </ul>
-                </>
-              )}
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>
-      </DragDropContext>
+      <DndProvider backend={HTML5Backend}>
+        {todayTodos.length > 0 && (
+          <>
+            <h2>Today</h2>
+            <ul>
+              {todayTodos.map((todo, index) => (
+                <DraggableItem key={todo.id} id={todo.id} index={index} moveItem={moveItem}>
+                  <input
+                    type="checkbox"
+                    checked={todo.completed}
+                    onChange={() => toggleTodo(todo.id)}
+                  />
+                  <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
+                    {todo.text} (Due: {todo.dueDate.toLocaleDateString()})
+                  </span>
+                  <button onClick={() => deleteTodo(todo.id)}>Delete</button>
+                </DraggableItem>
+              ))}
+            </ul>
+          </>
+        )}
+        {tomorrowTodos.length > 0 && (
+          <>
+            <h2>Tomorrow</h2>
+            <ul>
+              {tomorrowTodos.map((todo, index) => (
+                <DraggableItem key={todo.id} id={todo.id} index={index + todayTodos.length} moveItem={moveItem}>
+                  <input
+                    type="checkbox"
+                    checked={todo.completed}
+                    onChange={() => toggleTodo(todo.id)}
+                  />
+                  <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
+                    {todo.text} (Due: {todo.dueDate.toLocaleDateString()})
+                  </span>
+                  <button onClick={() => deleteTodo(todo.id)}>Delete</button>
+                </DraggableItem>
+              ))}
+            </ul>
+          </>
+        )}
+        {upcomingTodos.length > 0 && (
+          <>
+            <h2>Upcoming</h2>
+            <ul>
+              {upcomingTodos.map((todo, index) => (
+                <DraggableItem key={todo.id} id={todo.id} index={index + todayTodos.length + tomorrowTodos.length} moveItem={moveItem}>
+                  <input
+                    type="checkbox"
+                    checked={todo.completed}
+                    onChange={() => toggleTodo(todo.id)}
+                  />
+                  <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
+                    {todo.text} (Due: {todo.dueDate.toLocaleDateString()})
+                  </span>
+                  <button onClick={() => deleteTodo(todo.id)}>Delete</button>
+                </DraggableItem>
+              ))}
+            </ul>
+          </>
+        )}
+      </DndProvider>
     </div>
   )
 }
