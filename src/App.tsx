@@ -15,13 +15,14 @@ interface DraggableItemProps {
   index: number;
   moveItem: (dragIndex: number, hoverIndex: number) => void;
   children: React.ReactNode;
+  group: 'today' | 'tomorrow' | 'upcoming';
 }
 
-const DraggableItem: React.FC<DraggableItemProps> = ({ id, index, moveItem, children }) => {
+const DraggableItem: React.FC<DraggableItemProps> = ({ id, index, moveItem, children, group }) => {
   const ref = useRef<HTMLLIElement>(null)
 
   const [, drop] = useDrop({
-    accept: 'TODO',
+    accept: `TODO_${group.toUpperCase()}`,
     hover(item: { id: string; index: number }, monitor) {
       if (!ref.current) {
         return
@@ -37,7 +38,7 @@ const DraggableItem: React.FC<DraggableItemProps> = ({ id, index, moveItem, chil
   })
 
   const [{ isDragging }, drag, preview] = useDrag({
-    type: 'TODO',
+    type: `TODO_${group.toUpperCase()}`,
     item: () => ({ id, index }),
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
@@ -73,13 +74,27 @@ function App() {
   const [darkMode, setDarkMode] = useState<boolean>(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const moveItem = useCallback((dragIndex: number, hoverIndex: number) => {
+  const moveItem = useCallback((group: 'today' | 'tomorrow' | 'upcoming', dragIndex: number, hoverIndex: number) => {
     setTodos((prevTodos) => {
       const newTodos = [...prevTodos];
-      const draggedItem = newTodos[dragIndex];
-      newTodos.splice(dragIndex, 1);
-      newTodos.splice(hoverIndex, 0, draggedItem);
-      return newTodos;
+      let groupTodos: Todo[];
+      if (group === 'today') {
+        groupTodos = newTodos.filter(isDueOrOverdue);
+      } else if (group === 'tomorrow') {
+        groupTodos = newTodos.filter(todo => isTomorrow(todo.dueDate));
+      } else {
+        groupTodos = newTodos.filter(todo => !isDueOrOverdue(todo) && !isTomorrow(todo.dueDate));
+      }
+      
+      const [draggedItem] = groupTodos.splice(dragIndex, 1);
+      groupTodos.splice(hoverIndex, 0, draggedItem);
+      
+      const updatedTodos = newTodos.map(todo => {
+        const index = groupTodos.findIndex(t => t.id === todo.id);
+        return index !== -1 ? groupTodos[index] : todo;
+      });
+      
+      return updatedTodos;
     });
   }, []);
 
@@ -223,7 +238,7 @@ function App() {
             <h2>Today</h2>
             <ul>
               {todayTodos.map((todo, index) => (
-                <DraggableItem key={todo.id} id={todo.id} index={index} moveItem={moveItem}>
+                <DraggableItem key={todo.id} id={todo.id} index={index} moveItem={(dragIndex, hoverIndex) => moveItem('today', dragIndex, hoverIndex)} group="today">
                   <input
                     type="checkbox"
                     checked={todo.completed}
@@ -243,7 +258,7 @@ function App() {
             <h2>Tomorrow</h2>
             <ul>
               {tomorrowTodos.map((todo, index) => (
-                <DraggableItem key={todo.id} id={todo.id} index={index + todayTodos.length} moveItem={moveItem}>
+                <DraggableItem key={todo.id} id={todo.id} index={index} moveItem={(dragIndex, hoverIndex) => moveItem('tomorrow', dragIndex, hoverIndex)} group="tomorrow">
                   <input
                     type="checkbox"
                     checked={todo.completed}
@@ -263,7 +278,7 @@ function App() {
             <h2>Upcoming</h2>
             <ul>
               {upcomingTodos.map((todo, index) => (
-                <DraggableItem key={todo.id} id={todo.id} index={index + todayTodos.length + tomorrowTodos.length} moveItem={moveItem}>
+                <DraggableItem key={todo.id} id={todo.id} index={index} moveItem={(dragIndex, hoverIndex) => moveItem('upcoming', dragIndex, hoverIndex)} group="upcoming">
                   <input
                     type="checkbox"
                     checked={todo.completed}
