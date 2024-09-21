@@ -29,13 +29,22 @@ function App() {
       date.getFullYear() === today.getFullYear()
   }
 
+  const isTomorrow = (date: Date) => {
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    return date.getDate() === tomorrow.getDate() &&
+      date.getMonth() === tomorrow.getMonth() &&
+      date.getFullYear() === tomorrow.getFullYear()
+  }
+
   const isDueOrOverdue = (todo: Todo) => {
     const today = new Date()
     return todo.dueDate <= today || isToday(todo.dueDate)
   }
 
   const todayTodos = todos.filter(isDueOrOverdue)
-  const upcomingTodos = todos.filter(todo => !isDueOrOverdue(todo))
+  const tomorrowTodos = todos.filter(todo => isTomorrow(todo.dueDate))
+  const upcomingTodos = todos.filter(todo => !isDueOrOverdue(todo) && !isTomorrow(todo.dueDate))
 
   const toggleTodo = (id: number) => {
     setTodos(todos.map(todo =>
@@ -67,6 +76,22 @@ function App() {
       <h2>Today</h2>
       <ul>
         {todayTodos.map(todo => (
+          <li key={todo.id}>
+            <input
+              type="checkbox"
+              checked={todo.completed}
+              onChange={() => toggleTodo(todo.id)}
+            />
+            <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
+              {todo.text} (Due: {todo.dueDate.toLocaleDateString()})
+            </span>
+            <button onClick={() => deleteTodo(todo.id)}>Delete</button>
+          </li>
+        ))}
+      </ul>
+      <h2>Tomorrow</h2>
+      <ul>
+        {tomorrowTodos.map(todo => (
           <li key={todo.id}>
             <input
               type="checkbox"
