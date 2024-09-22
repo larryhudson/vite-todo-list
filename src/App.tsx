@@ -111,7 +111,17 @@ function App() {
         toGroupTodos = newTodos.filter(todo => !isDueOrOverdue(todo) && !isTomorrow(todo.dueDate));
       }
 
+      if (dragIndex < 0 || dragIndex >= fromGroupTodos.length) {
+        console.error('Invalid dragIndex:', dragIndex);
+        return prevTodos;
+      }
+
       const [draggedItem] = fromGroupTodos.splice(dragIndex, 1);
+
+      if (!draggedItem) {
+        console.error('No item found at dragIndex:', dragIndex);
+        return prevTodos;
+      }
 
       // Update the due date based on the new group
       const today = new Date();
@@ -144,7 +154,7 @@ function App() {
 
       return newTodos;
     });
-  }, []);
+  }, [isDueOrOverdue, isTomorrow]);
 
   useEffect(() => {
     const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
