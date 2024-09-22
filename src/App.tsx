@@ -10,6 +10,8 @@ interface Todo {
   dueDate: Date;
 }
 
+type FilterStatus = 'all' | 'active' | 'completed';
+
 interface DraggableItemProps {
   id: string;
   index: number;
@@ -72,6 +74,7 @@ function App() {
   const [newTodo, setNewTodo] = useState('')
   const [dueDate, setDueDate] = useState<string>(new Date().toISOString().split('T')[0])
   const [darkMode, setDarkMode] = useState<boolean>(false)
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const moveItem = useCallback((group: 'today' | 'tomorrow' | 'upcoming', dragIndex: number, hoverIndex: number) => {
@@ -194,6 +197,17 @@ function App() {
   const tomorrowTodos = todos.filter(todo => isTomorrow(todo.dueDate))
   const upcomingTodos = todos.filter(todo => !isDueOrOverdue(todo) && !isTomorrow(todo.dueDate))
 
+  const filterTodos = (todos: Todo[]): Todo[] => {
+    switch (filterStatus) {
+      case 'active':
+        return todos.filter(todo => !todo.completed);
+      case 'completed':
+        return todos.filter(todo => todo.completed);
+      default:
+        return todos;
+    }
+  }
+
   const toggleTodo = (id: string) => {
     const newTodos = todos.map(todo =>
       todo.id === id ? { ...todo, completed: !todo.completed } : todo
@@ -240,12 +254,17 @@ function App() {
         />
         <button type="submit">Add</button>
       </form>
+      <div>
+        <button onClick={() => setFilterStatus('all')}>All</button>
+        <button onClick={() => setFilterStatus('active')}>Active</button>
+        <button onClick={() => setFilterStatus('completed')}>Completed</button>
+      </div>
       <DndProvider backend={HTML5Backend}>
-        {todayTodos.length > 0 && (
+        {filterTodos(todayTodos).length > 0 && (
           <>
             <h2>Today</h2>
             <ul>
-              {todayTodos.map((todo, index) => (
+              {filterTodos(todayTodos).map((todo, index) => (
                 <DraggableItem key={todo.id} id={todo.id} index={index} moveItem={(dragIndex, hoverIndex) => moveItem('today', dragIndex, hoverIndex)} group="today">
                   <input
                     type="checkbox"
@@ -261,11 +280,11 @@ function App() {
             </ul>
           </>
         )}
-        {tomorrowTodos.length > 0 && (
+        {filterTodos(tomorrowTodos).length > 0 && (
           <>
             <h2>Tomorrow</h2>
             <ul>
-              {tomorrowTodos.map((todo, index) => (
+              {filterTodos(tomorrowTodos).map((todo, index) => (
                 <DraggableItem key={todo.id} id={todo.id} index={index} moveItem={(dragIndex, hoverIndex) => moveItem('tomorrow', dragIndex, hoverIndex)} group="tomorrow">
                   <input
                     type="checkbox"
@@ -281,11 +300,11 @@ function App() {
             </ul>
           </>
         )}
-        {upcomingTodos.length > 0 && (
+        {filterTodos(upcomingTodos).length > 0 && (
           <>
             <h2>Upcoming</h2>
             <ul>
-              {upcomingTodos.map((todo, index) => (
+              {filterTodos(upcomingTodos).map((todo, index) => (
                 <DraggableItem key={todo.id} id={todo.id} index={index} moveItem={(dragIndex, hoverIndex) => moveItem('upcoming', dragIndex, hoverIndex)} group="upcoming">
                   <input
                     type="checkbox"

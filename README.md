@@ -5,10 +5,12 @@ This is a simple to-do list project built with React and Vite. It serves as a de
 ## Project Overview
 
 This project demonstrates a basic to-do list application with the following features:
-- Add new tasks
+- Add new tasks with due dates
 - Mark tasks as complete
 - Delete tasks
 - Filter tasks by status (all, active, completed)
+- Organize tasks into Today, Tomorrow, and Upcoming categories
+- Drag and drop to reorder tasks within each category
 
 ## Technology Stack
 
