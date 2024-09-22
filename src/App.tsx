@@ -75,6 +75,10 @@ function App() {
   const [dueDate, setDueDate] = useState<string>(new Date().toISOString().split('T')[0])
   const [darkMode, setDarkMode] = useState<boolean>(false)
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
+  
+  const getFilterButtonClass = (status: FilterStatus) => {
+    return `filter-button ${filterStatus === status ? 'active' : ''}`
+  }
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const moveItem = useCallback((group: 'today' | 'tomorrow' | 'upcoming', dragIndex: number, hoverIndex: number) => {
@@ -254,10 +258,10 @@ function App() {
         />
         <button type="submit">Add</button>
       </form>
-      <div>
-        <button onClick={() => setFilterStatus('all')}>All</button>
-        <button onClick={() => setFilterStatus('active')}>Active</button>
-        <button onClick={() => setFilterStatus('completed')}>Completed</button>
+      <div className="filter-buttons">
+        <button className={getFilterButtonClass('all')} onClick={() => setFilterStatus('all')}>All</button>
+        <button className={getFilterButtonClass('active')} onClick={() => setFilterStatus('active')}>Active</button>
+        <button className={getFilterButtonClass('completed')} onClick={() => setFilterStatus('completed')}>Completed</button>
       </div>
       <DndProvider backend={HTML5Backend}>
         {filterTodos(todayTodos).length > 0 && (
