@@ -3,6 +3,32 @@ import { DndProvider, useDrag, useDrop } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import './App.css'
 
+// Add this style block at the end of the file
+const styles = `
+  .drag-handle {
+    cursor: move;
+    padding: 0 5px;
+    margin-right: 5px;
+    display: inline-block;
+    position: relative;
+  }
+
+  .drag-over {
+    background-color: rgba(0, 0, 0, 0.1);
+  }
+
+  .drop-placeholder {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: #007bff;
+  }
+`;
+
+// Add this line at the end of the App component, just before the closing return parenthesis
+<style>{styles}</style>
+
 interface Todo {
   id: string;
   text: string;
@@ -23,9 +49,9 @@ interface DraggableItemProps {
 const DraggableItem: React.FC<DraggableItemProps> = ({ id, index, moveItem, children, group }) => {
   const ref = useRef<HTMLLIElement>(null)
 
-  const [, drop] = useDrop({
+  const [{ isOver }, drop] = useDrop({
     accept: ['TODO_TODAY', 'TODO_TOMORROW', 'TODO_UPCOMING'],
-    drop(item: { id: string; index: number; group: string }) {
+    hover(item: { id: string; index: number; group: string }, monitor) {
       if (!ref.current) {
         return
       }
@@ -38,8 +64,25 @@ const DraggableItem: React.FC<DraggableItemProps> = ({ id, index, moveItem, chil
         return
       }
 
+      const hoverBoundingRect = ref.current.getBoundingClientRect()
+      const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2
+      const clientOffset = monitor.getClientOffset()
+      const hoverClientY = clientOffset!.y - hoverBoundingRect.top
+
+      if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
+        return
+      }
+      if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
+        return
+      }
+
       moveItem(dragIndex, hoverIndex, fromGroup, toGroup)
+      item.index = hoverIndex
+      item.group = toGroup
     },
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
+    }),
   })
 
   const [{ isDragging }, drag, preview] = useDrag({
@@ -54,7 +97,10 @@ const DraggableItem: React.FC<DraggableItemProps> = ({ id, index, moveItem, chil
 
   return (
     <li ref={preview} style={{ opacity: isDragging ? 0.5 : 1 }}>
-      <span ref={ref} className="drag-handle">☰</span>
+      <div ref={ref} className={`drag-handle ${isOver ? 'drag-over' : ''}`}>
+        ☰
+        {isOver && <div className="drop-placeholder" />}
+      </div>
       {children}
     </li>
   )
@@ -110,17 +156,14 @@ function App() {
   const moveItem = useCallback((dragIndex: number, hoverIndex: number, fromGroup: string, toGroup: string) => {
     setTodos((prevTodos) => {
       const newTodos = [...prevTodos];
-      let fromGroupTodos: Todo[];
-      let toGroupTodos: Todo[];
-
       const getGroupTodos = (group: string) => {
         if (group === 'today') return newTodos.filter(isDueOrOverdue);
         if (group === 'tomorrow') return newTodos.filter(todo => isTomorrow(todo.dueDate));
         return newTodos.filter(todo => !isDueOrOverdue(todo) && !isTomorrow(todo.dueDate));
       };
 
-      fromGroupTodos = getGroupTodos(fromGroup);
-      toGroupTodos = getGroupTodos(toGroup);
+      const fromGroupTodos = getGroupTodos(fromGroup);
+      const toGroupTodos = getGroupTodos(toGroup);
 
       if (dragIndex < 0 || dragIndex >= fromGroupTodos.length) {
         console.error('Invalid dragIndex:', dragIndex);
@@ -150,7 +193,7 @@ function App() {
 
       toGroupTodos.splice(hoverIndex, 0, draggedItem);
 
-      // Update the todos array
+      // Create a new array with updated todos
       return newTodos.map(todo => {
         if (todo.id === draggedItem.id) {
           return draggedItem;
