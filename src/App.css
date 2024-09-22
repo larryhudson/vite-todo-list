@@ -125,5 +125,5 @@ li button:hover {
 
 @keyframes fadeInOut {
   0%, 100% { opacity: 0; }
-  10%, 90% { opacity: 1; }
+  20%, 80% { opacity: 1; }
 }
