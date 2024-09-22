@@ -82,6 +82,7 @@ function App() {
     return `filter-button ${filterStatus === status ? 'active' : ''}`
   }
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const completionTimeoutRef = useRef<number | null>(null)
 
   const moveItem = useCallback((group: 'today' | 'tomorrow' | 'upcoming', dragIndex: number, hoverIndex: number) => {
     setTodos((prevTodos) => {
@@ -220,7 +221,19 @@ function App() {
         const updatedTodo = { ...todo, completed: !todo.completed };
         if (updatedTodo.completed) {
           setCompletedTodoId(id);
-          setTimeout(() => setCompletedTodoId(null), 2000);
+          if (completionTimeoutRef.current) {
+            clearTimeout(completionTimeoutRef.current);
+          }
+          completionTimeoutRef.current = window.setTimeout(() => {
+            setCompletedTodoId(null);
+            completionTimeoutRef.current = null;
+          }, 2000);
+        } else {
+          if (completionTimeoutRef.current) {
+            clearTimeout(completionTimeoutRef.current);
+            completionTimeoutRef.current = null;
+          }
+          setCompletedTodoId(null);
         }
         return updatedTodo;
       }
