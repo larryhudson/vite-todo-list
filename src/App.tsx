@@ -1,7 +1,10 @@
+// Import necessary dependencies from React and other libraries
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { DndProvider, useDrag, useDrop } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import './App.css'
+
+// Define interfaces and types
 
 // Add this style block at the end of the file
 const styles = `
@@ -29,6 +32,7 @@ const styles = `
 // Add this line at the end of the App component, just before the closing return parenthesis
 <style>{styles}</style>
 
+// Define the structure of a Todo item
 interface Todo {
   id: string;
   text: string;
@@ -36,8 +40,10 @@ interface Todo {
   dueDate: Date;
 }
 
+// Define possible filter statuses
 type FilterStatus = 'all' | 'active' | 'completed';
 
+// Define props for the DraggableItem component
 interface DraggableItemProps {
   id: string;
   index: number;
@@ -46,9 +52,12 @@ interface DraggableItemProps {
   group: 'today' | 'tomorrow' | 'upcoming';
 }
 
+// DraggableItem component for drag and drop functionality
+
 const DraggableItem: React.FC<DraggableItemProps> = ({ id, index, moveItem, children, group }) => {
   const ref = useRef<HTMLLIElement>(null)
 
+  // Set up drop functionality
   const [{ isOver }, drop] = useDrop({
     accept: ['TODO_TODAY', 'TODO_TOMORROW', 'TODO_UPCOMING'],
     hover(item: { id: string; index: number; group: string }, monitor) {
@@ -60,15 +69,23 @@ const DraggableItem: React.FC<DraggableItemProps> = ({ id, index, moveItem, chil
       const fromGroup = item.group
       const toGroup = group
 
+      // Don't replace items with themselves
       if (dragIndex === hoverIndex && fromGroup === toGroup) {
         return
       }
 
+      // Determine rectangle on screen
       const hoverBoundingRect = ref.current.getBoundingClientRect()
+      // Get vertical middle
       const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2
+      // Determine mouse position
       const clientOffset = monitor.getClientOffset()
+      // Get pixels to the top
       const hoverClientY = clientOffset!.y - hoverBoundingRect.top
 
+      // Only perform the move when the mouse has crossed half of the items height
+      // When dragging downwards, only move when the cursor is below 50%
+      // When dragging upwards, only move when the cursor is above 50%
       if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
         return
       }
@@ -76,7 +93,12 @@ const DraggableItem: React.FC<DraggableItemProps> = ({ id, index, moveItem, chil
         return
       }
 
+      // Time to actually perform the action
       moveItem(dragIndex, hoverIndex, fromGroup, toGroup)
+      // Note: we're mutating the monitor item here!
+      // Generally it's better to avoid mutations,
+      // but it's good here for the sake of performance
+      // to avoid expensive index searches.
       item.index = hoverIndex
       item.group = toGroup
     },
@@ -85,6 +107,7 @@ const DraggableItem: React.FC<DraggableItemProps> = ({ id, index, moveItem, chil
     }),
   })
 
+  // Set up drag functionality
   const [{ isDragging }, drag, preview] = useDrag({
     type: `TODO_${group.toUpperCase()}`,
     item: () => ({ id, index, group }),
@@ -93,6 +116,7 @@ const DraggableItem: React.FC<DraggableItemProps> = ({ id, index, moveItem, chil
     }),
   })
 
+  // Initialize drag and drop on the same element
   drag(drop(ref))
 
   return (
@@ -107,6 +131,7 @@ const DraggableItem: React.FC<DraggableItemProps> = ({ id, index, moveItem, chil
 }
 
 function App() {
+  // Function to load todos from localStorage
   const loadTodosFromLocalStorage = (): Todo[] => {
     const storedTodos = localStorage.getItem('todos')
     if (storedTodos) {
@@ -119,6 +144,7 @@ function App() {
     return []
   }
 
+  // State variables
   const [todos, setTodos] = useState<Todo[]>(loadTodosFromLocalStorage())
   const [newTodo, setNewTodo] = useState('')
   const [dueDate, setDueDate] = useState<string>(new Date().toISOString().split('T')[0])
@@ -127,9 +153,12 @@ function App() {
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null)
   const [completedTodoId, setCompletedTodoId] = useState<string | null>(null)
   
+  // Helper function to get the class for filter buttons
   const getFilterButtonClass = (status: FilterStatus) => {
     return `filter-button ${filterStatus === status ? 'active' : ''}`
   }
+  
+  // Refs
   const fileInputRef = useRef<HTMLInputElement>(null)
   const completionTimeoutRef = useRef<number | null>(null)
 
