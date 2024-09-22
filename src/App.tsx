@@ -15,7 +15,7 @@ type FilterStatus = 'all' | 'active' | 'completed';
 interface DraggableItemProps {
   id: string;
   index: number;
-  moveItem: (dragIndex: number, hoverIndex: number) => void;
+  moveItem: (dragIndex: number, hoverIndex: number, fromGroup: string, toGroup: string) => void;
   children: React.ReactNode;
   group: 'today' | 'tomorrow' | 'upcoming';
 }
@@ -24,24 +24,29 @@ const DraggableItem: React.FC<DraggableItemProps> = ({ id, index, moveItem, chil
   const ref = useRef<HTMLLIElement>(null)
 
   const [, drop] = useDrop({
-    accept: `TODO_${group.toUpperCase()}`,
-    hover(item: { id: string; index: number }, monitor) {
+    accept: ['TODO_TODAY', 'TODO_TOMORROW', 'TODO_UPCOMING'],
+    hover(item: { id: string; index: number; group: string }, monitor) {
       if (!ref.current) {
         return
       }
       const dragIndex = item.index
       const hoverIndex = index
-      if (dragIndex === hoverIndex) {
+      const fromGroup = item.group
+      const toGroup = group
+
+      if (dragIndex === hoverIndex && fromGroup === toGroup) {
         return
       }
-      moveItem(dragIndex, hoverIndex)
+
+      moveItem(dragIndex, hoverIndex, fromGroup, toGroup)
       item.index = hoverIndex
+      item.group = toGroup
     },
   })
 
   const [{ isDragging }, drag, preview] = useDrag({
     type: `TODO_${group.toUpperCase()}`,
-    item: () => ({ id, index }),
+    item: () => ({ id, index, group }),
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
@@ -84,24 +89,49 @@ function App() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const completionTimeoutRef = useRef<number | null>(null)
 
-  const moveItem = useCallback((group: 'today' | 'tomorrow' | 'upcoming', dragIndex: number, hoverIndex: number) => {
+  const moveItem = useCallback((dragIndex: number, hoverIndex: number, fromGroup: string, toGroup: string) => {
     setTodos((prevTodos) => {
       const newTodos = [...prevTodos];
-      let groupTodos: Todo[];
-      if (group === 'today') {
-        groupTodos = newTodos.filter(isDueOrOverdue);
-      } else if (group === 'tomorrow') {
-        groupTodos = newTodos.filter(todo => isTomorrow(todo.dueDate));
+      let fromGroupTodos: Todo[];
+      let toGroupTodos: Todo[];
+
+      if (fromGroup === 'today') {
+        fromGroupTodos = newTodos.filter(isDueOrOverdue);
+      } else if (fromGroup === 'tomorrow') {
+        fromGroupTodos = newTodos.filter(todo => isTomorrow(todo.dueDate));
       } else {
-        groupTodos = newTodos.filter(todo => !isDueOrOverdue(todo) && !isTomorrow(todo.dueDate));
+        fromGroupTodos = newTodos.filter(todo => !isDueOrOverdue(todo) && !isTomorrow(todo.dueDate));
       }
-      
-      const [draggedItem] = groupTodos.splice(dragIndex, 1);
-      groupTodos.splice(hoverIndex, 0, draggedItem);
-      
+
+      if (toGroup === 'today') {
+        toGroupTodos = newTodos.filter(isDueOrOverdue);
+      } else if (toGroup === 'tomorrow') {
+        toGroupTodos = newTodos.filter(todo => isTomorrow(todo.dueDate));
+      } else {
+        toGroupTodos = newTodos.filter(todo => !isDueOrOverdue(todo) && !isTomorrow(todo.dueDate));
+      }
+
+      const [draggedItem] = fromGroupTodos.splice(dragIndex, 1);
+
+      // Update the due date based on the new group
+      const today = new Date();
+      if (toGroup === 'today') {
+        draggedItem.dueDate = today;
+      } else if (toGroup === 'tomorrow') {
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        draggedItem.dueDate = tomorrow;
+      } else if (toGroup === 'upcoming') {
+        const nextWeek = new Date(today);
+        nextWeek.setDate(nextWeek.getDate() + 7);
+        draggedItem.dueDate = nextWeek;
+      }
+
+      toGroupTodos.splice(hoverIndex, 0, draggedItem);
+
       // Create a map of todo IDs to their new positions within the group
-      const todoPositions = new Map(groupTodos.map((todo, index) => [todo.id, index]));
-      
+      const todoPositions = new Map(toGroupTodos.map((todo, index) => [todo.id, index]));
+
       // Update the order of todos in the original array
       newTodos.sort((a, b) => {
         const posA = todoPositions.get(a.id);
@@ -111,7 +141,7 @@ function App() {
         }
         return 0;
       });
-      
+
       return newTodos;
     });
   }, []);
@@ -296,70 +326,40 @@ function App() {
         <button className={getFilterButtonClass('completed')} onClick={() => setFilterStatus('completed')}>Completed</button>
       </div>
       <DndProvider backend={HTML5Backend}>
-        {filterTodos(todayTodos).length > 0 && (
-          <>
-            <h2>Today</h2>
-            <ul>
-              {filterTodos(todayTodos).map((todo, index) => (
-                <DraggableItem key={todo.id} id={todo.id} index={index} moveItem={(dragIndex, hoverIndex) => moveItem('today', dragIndex, hoverIndex)} group="today">
-                  <input
-                    type="checkbox"
-                    checked={todo.completed}
-                    onChange={() => toggleTodo(todo.id)}
-                  />
-                  <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
-                    {todo.text} (Due: {todo.dueDate.toLocaleDateString()})
-                  </span>
-                  {completedTodoId === todo.id && (
-                    <span className="completion-message" style={{ textDecoration: 'none' }}>Good job!</span>
-                  )}
-                  <button onClick={() => setEditingTodo(todo)}>Edit</button>
-                  <button onClick={() => deleteTodo(todo.id)}>Delete</button>
-                </DraggableItem>
-              ))}
-            </ul>
-          </>
-        )}
-        {filterTodos(tomorrowTodos).length > 0 && (
-          <>
-            <h2>Tomorrow</h2>
-            <ul>
-              {filterTodos(tomorrowTodos).map((todo, index) => (
-                <DraggableItem key={todo.id} id={todo.id} index={index} moveItem={(dragIndex, hoverIndex) => moveItem('tomorrow', dragIndex, hoverIndex)} group="tomorrow">
-                  <input
-                    type="checkbox"
-                    checked={todo.completed}
-                    onChange={() => toggleTodo(todo.id)}
-                  />
-                  <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
-                    {todo.text} (Due: {todo.dueDate.toLocaleDateString()})
-                  </span>
-                  <button onClick={() => deleteTodo(todo.id)}>Delete</button>
-                </DraggableItem>
-              ))}
-            </ul>
-          </>
-        )}
-        {filterTodos(upcomingTodos).length > 0 && (
-          <>
-            <h2>Upcoming</h2>
-            <ul>
-              {filterTodos(upcomingTodos).map((todo, index) => (
-                <DraggableItem key={todo.id} id={todo.id} index={index} moveItem={(dragIndex, hoverIndex) => moveItem('upcoming', dragIndex, hoverIndex)} group="upcoming">
-                  <input
-                    type="checkbox"
-                    checked={todo.completed}
-                    onChange={() => toggleTodo(todo.id)}
-                  />
-                  <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
-                    {todo.text} (Due: {todo.dueDate.toLocaleDateString()})
-                  </span>
-                  <button onClick={() => deleteTodo(todo.id)}>Delete</button>
-                </DraggableItem>
-              ))}
-            </ul>
-          </>
-        )}
+        {['today', 'tomorrow', 'upcoming'].map((group) => {
+          const todos = group === 'today' ? todayTodos :
+                        group === 'tomorrow' ? tomorrowTodos : upcomingTodos;
+          return filterTodos(todos).length > 0 && (
+            <React.Fragment key={group}>
+              <h2>{group.charAt(0).toUpperCase() + group.slice(1)}</h2>
+              <ul>
+                {filterTodos(todos).map((todo, index) => (
+                  <DraggableItem 
+                    key={todo.id} 
+                    id={todo.id} 
+                    index={index} 
+                    moveItem={(dragIndex, hoverIndex, fromGroup, toGroup) => moveItem(dragIndex, hoverIndex, fromGroup, toGroup)} 
+                    group={group as 'today' | 'tomorrow' | 'upcoming'}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={todo.completed}
+                      onChange={() => toggleTodo(todo.id)}
+                    />
+                    <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
+                      {todo.text} (Due: {todo.dueDate.toLocaleDateString()})
+                    </span>
+                    {completedTodoId === todo.id && (
+                      <span className="completion-message" style={{ textDecoration: 'none' }}>Good job!</span>
+                    )}
+                    <button onClick={() => setEditingTodo(todo)}>Edit</button>
+                    <button onClick={() => deleteTodo(todo.id)}>Delete</button>
+                  </DraggableItem>
+                ))}
+              </ul>
+            </React.Fragment>
+          );
+        })}
       </DndProvider>
       {editingTodo && (
         <div className="edit-form">
