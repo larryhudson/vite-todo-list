@@ -76,11 +76,13 @@ function App() {
   const [darkMode, setDarkMode] = useState<boolean>(false)
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null)
+  const [completedTodoId, setCompletedTodoId] = useState<string | null>(null)
   
   const getFilterButtonClass = (status: FilterStatus) => {
     return `filter-button ${filterStatus === status ? 'active' : ''}`
   }
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const completionTimeoutRef = useRef<number | null>(null)
 
   const moveItem = useCallback((group: 'today' | 'tomorrow' | 'upcoming', dragIndex: number, hoverIndex: number) => {
     setTodos((prevTodos) => {
@@ -214,10 +216,31 @@ function App() {
   }
 
   const toggleTodo = (id: string) => {
-    const newTodos = todos.map(todo =>
-      todo.id === id ? { ...todo, completed: !todo.completed } : todo
-    )
-    setTodos(newTodos)
+    const newTodos = todos.map(todo => {
+      if (todo.id === id) {
+        const updatedTodo = { ...todo, completed: !todo.completed };
+        if (updatedTodo.completed) {
+          setCompletedTodoId(id);
+          if (completionTimeoutRef.current) {
+            clearTimeout(completionTimeoutRef.current);
+          }
+          completionTimeoutRef.current = window.setTimeout(() => {
+            setCompletedTodoId(null);
+            completionTimeoutRef.current = null;
+          }, 2000);
+        } else {
+          // Immediately hide the message and cancel the timeout when uncompleting
+          if (completionTimeoutRef.current) {
+            clearTimeout(completionTimeoutRef.current);
+            completionTimeoutRef.current = null;
+          }
+          setCompletedTodoId(null);
+        }
+        return updatedTodo;
+      }
+      return todo;
+    });
+    setTodos(newTodos);
   }
 
   const deleteTodo = (id: string) => {
@@ -287,6 +310,9 @@ function App() {
                   <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
                     {todo.text} (Due: {todo.dueDate.toLocaleDateString()})
                   </span>
+                  {completedTodoId === todo.id && (
+                    <span className="completion-message" style={{ textDecoration: 'none' }}>Good job!</span>
+                  )}
                   <button onClick={() => setEditingTodo(todo)}>Edit</button>
                   <button onClick={() => deleteTodo(todo.id)}>Delete</button>
                 </DraggableItem>

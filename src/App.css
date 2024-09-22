@@ -113,3 +113,17 @@ li button:hover {
   background-color: var(--button-bg);
   color: white;
 }
+.completion-message {
+  background-color: #4CAF50;
+  color: white;
+  padding: 2px 5px;
+  border-radius: 3px;
+  margin-left: 10px;
+  font-size: 0.8em;
+  animation: fadeInOut 2s ease-in-out;
+}
+
+@keyframes fadeInOut {
+  0%, 100% { opacity: 0; }
+  20%, 80% { opacity: 1; }
+}
