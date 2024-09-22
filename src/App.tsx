@@ -25,7 +25,7 @@ const DraggableItem: React.FC<DraggableItemProps> = ({ id, index, moveItem, chil
 
   const [, drop] = useDrop({
     accept: ['TODO_TODAY', 'TODO_TOMORROW', 'TODO_UPCOMING'],
-    hover(item: { id: string; index: number; group: string }, monitor) {
+    drop(item: { id: string; index: number; group: string }) {
       if (!ref.current) {
         return
       }
@@ -39,8 +39,6 @@ const DraggableItem: React.FC<DraggableItemProps> = ({ id, index, moveItem, chil
       }
 
       moveItem(dragIndex, hoverIndex, fromGroup, toGroup)
-      item.index = hoverIndex
-      item.group = toGroup
     },
   })
 
@@ -115,21 +113,14 @@ function App() {
       let fromGroupTodos: Todo[];
       let toGroupTodos: Todo[];
 
-      if (fromGroup === 'today') {
-        fromGroupTodos = newTodos.filter(isDueOrOverdue);
-      } else if (fromGroup === 'tomorrow') {
-        fromGroupTodos = newTodos.filter(todo => isTomorrow(todo.dueDate));
-      } else {
-        fromGroupTodos = newTodos.filter(todo => !isDueOrOverdue(todo) && !isTomorrow(todo.dueDate));
-      }
+      const getGroupTodos = (group: string) => {
+        if (group === 'today') return newTodos.filter(isDueOrOverdue);
+        if (group === 'tomorrow') return newTodos.filter(todo => isTomorrow(todo.dueDate));
+        return newTodos.filter(todo => !isDueOrOverdue(todo) && !isTomorrow(todo.dueDate));
+      };
 
-      if (toGroup === 'today') {
-        toGroupTodos = newTodos.filter(isDueOrOverdue);
-      } else if (toGroup === 'tomorrow') {
-        toGroupTodos = newTodos.filter(todo => isTomorrow(todo.dueDate));
-      } else {
-        toGroupTodos = newTodos.filter(todo => !isDueOrOverdue(todo) && !isTomorrow(todo.dueDate));
-      }
+      fromGroupTodos = getGroupTodos(fromGroup);
+      toGroupTodos = getGroupTodos(toGroup);
 
       if (dragIndex < 0 || dragIndex >= fromGroupTodos.length) {
         console.error('Invalid dragIndex:', dragIndex);
@@ -146,35 +137,28 @@ function App() {
       // Update the due date based on the new group
       const today = new Date();
       if (toGroup === 'today') {
-        draggedItem.dueDate = today;
+        draggedItem.dueDate = new Date(today);
       } else if (toGroup === 'tomorrow') {
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
-        draggedItem.dueDate = tomorrow;
+        draggedItem.dueDate = new Date(tomorrow);
       } else if (toGroup === 'upcoming') {
         const nextWeek = new Date(today);
         nextWeek.setDate(nextWeek.getDate() + 7);
-        draggedItem.dueDate = nextWeek;
+        draggedItem.dueDate = new Date(nextWeek);
       }
 
       toGroupTodos.splice(hoverIndex, 0, draggedItem);
 
-      // Create a map of todo IDs to their new positions within the group
-      const todoPositions = new Map(toGroupTodos.map((todo, index) => [todo.id, index]));
-
-      // Update the order of todos in the original array
-      newTodos.sort((a, b) => {
-        const posA = todoPositions.get(a.id);
-        const posB = todoPositions.get(b.id);
-        if (posA !== undefined && posB !== undefined) {
-          return posA - posB;
+      // Update the todos array
+      return newTodos.map(todo => {
+        if (todo.id === draggedItem.id) {
+          return draggedItem;
         }
-        return 0;
+        return todo;
       });
-
-      return newTodos;
     });
-  }, []);
+  }, [isDueOrOverdue, isTomorrow]);
 
   useEffect(() => {
     const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
