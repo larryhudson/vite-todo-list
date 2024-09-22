@@ -75,6 +75,7 @@ function App() {
   const [dueDate, setDueDate] = useState<string>(new Date().toISOString().split('T')[0])
   const [darkMode, setDarkMode] = useState<boolean>(false)
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
+  const [editingTodo, setEditingTodo] = useState<Todo | null>(null)
   
   const getFilterButtonClass = (status: FilterStatus) => {
     return `filter-button ${filterStatus === status ? 'active' : ''}`
@@ -227,6 +228,14 @@ function App() {
     }
   }
 
+  const editTodo = (id: string, newText: string, newDueDate: Date) => {
+    const newTodos = todos.map(todo =>
+      todo.id === id ? { ...todo, text: newText, dueDate: newDueDate } : todo
+    )
+    setTodos(newTodos)
+    setEditingTodo(null)
+  }
+
   return (
     <div className="App">
       <button className="dark-mode-toggle" onClick={toggleDarkMode}>
@@ -278,6 +287,7 @@ function App() {
                   <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
                     {todo.text} (Due: {todo.dueDate.toLocaleDateString()})
                   </span>
+                  <button onClick={() => setEditingTodo(todo)}>Edit</button>
                   <button onClick={() => deleteTodo(todo.id)}>Delete</button>
                 </DraggableItem>
               ))}
@@ -325,6 +335,31 @@ function App() {
           </>
         )}
       </DndProvider>
+      {editingTodo && (
+        <div className="edit-form">
+          <h3>Edit Todo</h3>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const form = e.target as HTMLFormElement;
+            const newText = (form.elements.namedItem('editText') as HTMLInputElement).value;
+            const newDueDate = new Date((form.elements.namedItem('editDueDate') as HTMLInputElement).value);
+            editTodo(editingTodo.id, newText, newDueDate);
+          }}>
+            <input
+              type="text"
+              name="editText"
+              defaultValue={editingTodo.text}
+            />
+            <input
+              type="date"
+              name="editDueDate"
+              defaultValue={editingTodo.dueDate.toISOString().split('T')[0]}
+            />
+            <button type="submit">Save</button>
+            <button type="button" onClick={() => setEditingTodo(null)}>Cancel</button>
+          </form>
+        </div>
+      )}
     </div>
   )
 }
