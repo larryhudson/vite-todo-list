@@ -76,6 +76,7 @@ function App() {
   const [darkMode, setDarkMode] = useState<boolean>(false)
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null)
+  const [showCompletionMessage, setShowCompletionMessage] = useState(false)
   
   const getFilterButtonClass = (status: FilterStatus) => {
     return `filter-button ${filterStatus === status ? 'active' : ''}`
@@ -214,11 +215,27 @@ function App() {
   }
 
   const toggleTodo = (id: string) => {
-    const newTodos = todos.map(todo =>
-      todo.id === id ? { ...todo, completed: !todo.completed } : todo
-    )
-    setTodos(newTodos)
+    const newTodos = todos.map(todo => {
+      if (todo.id === id) {
+        const updatedTodo = { ...todo, completed: !todo.completed };
+        if (updatedTodo.completed) {
+          setShowCompletionMessage(true);
+        }
+        return updatedTodo;
+      }
+      return todo;
+    });
+    setTodos(newTodos);
   }
+
+  useEffect(() => {
+    if (showCompletionMessage) {
+      const timer = setTimeout(() => {
+        setShowCompletionMessage(false);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [showCompletionMessage]);
 
   const deleteTodo = (id: string) => {
     const newTodos = todos.filter(todo => todo.id !== id)
@@ -242,6 +259,9 @@ function App() {
         {darkMode ? '☀️' : '🌙'}
       </button>
       <h1>To-Do List</h1>
+      {showCompletionMessage && (
+        <div className="completion-message">Good job!</div>
+      )}
       <div className="import-export-buttons">
         <button onClick={exportTodos}>Export Todos</button>
         <button onClick={() => fileInputRef.current?.click()}>Import Todos</button>
