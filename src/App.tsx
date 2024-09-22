@@ -78,6 +78,26 @@ function App() {
   const [darkMode, setDarkMode] = useState<boolean>(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const isToday = (date: Date) => {
+    const today = new Date()
+    return date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear()
+  }
+
+  const isTomorrow = (date: Date) => {
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    return date.getDate() === tomorrow.getDate() &&
+      date.getMonth() === tomorrow.getMonth() &&
+      date.getFullYear() === tomorrow.getFullYear()
+  }
+
+  const isDueOrOverdue = (todo: Todo) => {
+    const today = new Date()
+    return todo.dueDate <= today || isToday(todo.dueDate)
+  }
+
   const moveItem = useCallback((sourceGroup: 'today' | 'tomorrow' | 'upcoming', targetGroup: 'today' | 'tomorrow' | 'upcoming', dragIndex: number, hoverIndex: number) => {
     setTodos((prevTodos) => {
       console.log('moveItem called:', { sourceGroup, targetGroup, dragIndex, hoverIndex });
@@ -148,7 +168,7 @@ function App() {
       console.log('Updated todos:', updatedTodos);
       return updatedTodos;
     });
-  }, [isDueOrOverdue, isTomorrow]);
+  }, []);
 
   useEffect(() => {
     const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -212,26 +232,6 @@ function App() {
       setNewTodo('')
       setDueDate(new Date().toISOString().split('T')[0])
     }
-  }
-
-  const isToday = (date: Date) => {
-    const today = new Date()
-    return date.getDate() === today.getDate() &&
-      date.getMonth() === today.getMonth() &&
-      date.getFullYear() === today.getFullYear()
-  }
-
-  const isTomorrow = (date: Date) => {
-    const tomorrow = new Date()
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    return date.getDate() === tomorrow.getDate() &&
-      date.getMonth() === tomorrow.getMonth() &&
-      date.getFullYear() === tomorrow.getFullYear()
-  }
-
-  const isDueOrOverdue = (todo: Todo) => {
-    const today = new Date()
-    return todo.dueDate <= today || isToday(todo.dueDate)
   }
 
   const todayTodos = todos.filter(isDueOrOverdue)
