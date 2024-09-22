@@ -295,10 +295,10 @@ function App() {
                   />
                   <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
                     {todo.text} (Due: {todo.dueDate.toLocaleDateString()})
-                    {completedTodoId === todo.id && (
-                      <span className="completion-message">Good job!</span>
-                    )}
                   </span>
+                  {completedTodoId === todo.id && (
+                    <span className="completion-message" style={{ textDecoration: 'none' }}>Good job!</span>
+                  )}
                   <button onClick={() => setEditingTodo(todo)}>Edit</button>
                   <button onClick={() => deleteTodo(todo.id)}>Delete</button>
                 </DraggableItem>
