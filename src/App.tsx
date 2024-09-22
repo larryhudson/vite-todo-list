@@ -89,6 +89,26 @@ function App() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const completionTimeoutRef = useRef<number | null>(null)
 
+  const isToday = (date: Date) => {
+    const today = new Date()
+    return date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear()
+  }
+
+  const isTomorrow = (date: Date) => {
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    return date.getDate() === tomorrow.getDate() &&
+      date.getMonth() === tomorrow.getMonth() &&
+      date.getFullYear() === tomorrow.getFullYear()
+  }
+
+  const isDueOrOverdue = (todo: Todo) => {
+    const today = new Date()
+    return todo.dueDate <= today || isToday(todo.dueDate)
+  }
+
   const moveItem = useCallback((dragIndex: number, hoverIndex: number, fromGroup: string, toGroup: string) => {
     setTodos((prevTodos) => {
       const newTodos = [...prevTodos];
@@ -154,7 +174,7 @@ function App() {
 
       return newTodos;
     });
-  }, [isDueOrOverdue, isTomorrow]);
+  }, []);
 
   useEffect(() => {
     const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -218,26 +238,6 @@ function App() {
       setNewTodo('')
       setDueDate(new Date().toISOString().split('T')[0])
     }
-  }
-
-  const isToday = (date: Date) => {
-    const today = new Date()
-    return date.getDate() === today.getDate() &&
-      date.getMonth() === today.getMonth() &&
-      date.getFullYear() === today.getFullYear()
-  }
-
-  const isTomorrow = (date: Date) => {
-    const tomorrow = new Date()
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    return date.getDate() === tomorrow.getDate() &&
-      date.getMonth() === tomorrow.getMonth() &&
-      date.getFullYear() === tomorrow.getFullYear()
-  }
-
-  const isDueOrOverdue = (todo: Todo) => {
-    const today = new Date()
-    return todo.dueDate <= today || isToday(todo.dueDate)
   }
 
   const todayTodos = todos.filter(isDueOrOverdue)
