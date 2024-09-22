@@ -229,6 +229,7 @@ function App() {
             completionTimeoutRef.current = null;
           }, 2000);
         } else {
+          // Immediately hide the message and cancel the timeout when uncompleting
           if (completionTimeoutRef.current) {
             clearTimeout(completionTimeoutRef.current);
             completionTimeoutRef.current = null;
