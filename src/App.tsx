@@ -76,7 +76,7 @@ function App() {
   const [darkMode, setDarkMode] = useState<boolean>(false)
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null)
-  const [showCompletionMessage, setShowCompletionMessage] = useState(false)
+  const [completedTodoId, setCompletedTodoId] = useState<string | null>(null)
   
   const getFilterButtonClass = (status: FilterStatus) => {
     return `filter-button ${filterStatus === status ? 'active' : ''}`
@@ -219,7 +219,8 @@ function App() {
       if (todo.id === id) {
         const updatedTodo = { ...todo, completed: !todo.completed };
         if (updatedTodo.completed) {
-          setShowCompletionMessage(true);
+          setCompletedTodoId(id);
+          setTimeout(() => setCompletedTodoId(null), 2000);
         }
         return updatedTodo;
       }
@@ -227,15 +228,6 @@ function App() {
     });
     setTodos(newTodos);
   }
-
-  useEffect(() => {
-    if (showCompletionMessage) {
-      const timer = setTimeout(() => {
-        setShowCompletionMessage(false);
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [showCompletionMessage]);
 
   const deleteTodo = (id: string) => {
     const newTodos = todos.filter(todo => todo.id !== id)
@@ -259,9 +251,6 @@ function App() {
         {darkMode ? '☀️' : '🌙'}
       </button>
       <h1>To-Do List</h1>
-      {showCompletionMessage && (
-        <div className="completion-message">Good job!</div>
-      )}
       <div className="import-export-buttons">
         <button onClick={exportTodos}>Export Todos</button>
         <button onClick={() => fileInputRef.current?.click()}>Import Todos</button>
@@ -306,6 +295,9 @@ function App() {
                   />
                   <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
                     {todo.text} (Due: {todo.dueDate.toLocaleDateString()})
+                    {completedTodoId === todo.id && (
+                      <span className="completion-message">Good job!</span>
+                    )}
                   </span>
                   <button onClick={() => setEditingTodo(todo)}>Edit</button>
                   <button onClick={() => deleteTodo(todo.id)}>Delete</button>
