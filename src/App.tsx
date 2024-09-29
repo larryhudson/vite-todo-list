@@ -4,6 +4,13 @@ import { DndProvider, useDrag, useDrop } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import './App.css'
 
+// Add this at the beginning of the file
+const SkipLink: React.FC = () => (
+  <a href="#main-content" className="skip-link">
+    Skip to main content
+  </a>
+)
+
 // Define interfaces and types
 
 // Add this style block at the end of the file
@@ -357,39 +364,53 @@ function App() {
 
   return (
     <div className="App">
-      <button className="dark-mode-toggle" onClick={toggleDarkMode}>
+      <SkipLink />
+      <button 
+        className="dark-mode-toggle" 
+        onClick={toggleDarkMode}
+        aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+      >
         {darkMode ? '☀️' : '🌙'}
       </button>
       <h1>To-Do List</h1>
+      <main id="main-content">
       <div className="import-export-buttons">
-        <button onClick={exportTodos}>Export Todos</button>
-        <button onClick={() => fileInputRef.current?.click()}>Import Todos</button>
+        <button onClick={exportTodos} aria-label="Export Todos">Export Todos</button>
+        <button onClick={() => fileInputRef.current?.click()} aria-label="Import Todos">Import Todos</button>
         <input
           type="file"
           ref={fileInputRef}
           style={{ display: 'none' }}
           onChange={importTodos}
           accept=".json"
+          aria-label="Choose file to import"
         />
       </div>
       <form onSubmit={addTodo}>
+        <label htmlFor="new-todo">New Todo:</label>
         <input
+          id="new-todo"
           type="text"
           value={newTodo}
           onChange={(e) => setNewTodo(e.target.value)}
           placeholder="Add a new todo"
         />
+        <label htmlFor="due-date">Due Date:</label>
         <input
+          id="due-date"
           type="date"
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
         />
-        <button type="submit">Add</button>
+        <button type="submit">Add Todo</button>
       </form>
-      <div className="filter-buttons">
-        <button className={getFilterButtonClass('all')} onClick={() => setFilterStatus('all')}>All</button>
-        <button className={getFilterButtonClass('active')} onClick={() => setFilterStatus('active')}>Active</button>
-        <button className={getFilterButtonClass('completed')} onClick={() => setFilterStatus('completed')}>Completed</button>
+      <div className="filter-buttons" role="group" aria-label="Filter todos">
+        <button className={getFilterButtonClass('all')} onClick={() => setFilterStatus('all')} aria-pressed={filterStatus === 'all'}>All</button>
+        <button className={getFilterButtonClass('active')} onClick={() => setFilterStatus('active')} aria-pressed={filterStatus === 'active'}>Active</button>
+        <button className={getFilterButtonClass('completed')} onClick={() => setFilterStatus('completed')} aria-pressed={filterStatus === 'completed'}>Completed</button>
+      </div>
+      <div aria-live="polite" className="sr-only">
+        {completedTodoId && <p>Todo marked as completed. Good job!</p>}
       </div>
       <DndProvider backend={HTML5Backend}>
         {['today', 'tomorrow', 'upcoming'].map((group) => {
@@ -411,15 +432,13 @@ function App() {
                       type="checkbox"
                       checked={todo.completed}
                       onChange={() => toggleTodo(todo.id)}
+                      aria-label={`Mark "${todo.text}" as ${todo.completed ? 'incomplete' : 'complete'}`}
                     />
                     <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
                       {todo.text} (Due: {todo.dueDate.toLocaleDateString()})
                     </span>
-                    {completedTodoId === todo.id && (
-                      <span className="completion-message" style={{ textDecoration: 'none' }}>Good job!</span>
-                    )}
-                    <button onClick={() => setEditingTodo(todo)}>Edit</button>
-                    <button onClick={() => deleteTodo(todo.id)}>Delete</button>
+                    <button onClick={() => setEditingTodo(todo)} aria-label={`Edit "${todo.text}"`}>Edit</button>
+                    <button onClick={() => deleteTodo(todo.id)} aria-label={`Delete "${todo.text}"`}>Delete</button>
                   </DraggableItem>
                 ))}
               </ul>
@@ -428,8 +447,8 @@ function App() {
         })}
       </DndProvider>
       {editingTodo && (
-        <div className="edit-form">
-          <h3>Edit Todo</h3>
+        <div className="edit-form" role="dialog" aria-labelledby="edit-form-title">
+          <h3 id="edit-form-title">Edit Todo</h3>
           <form onSubmit={(e) => {
             e.preventDefault();
             const form = e.target as HTMLFormElement;
@@ -437,12 +456,16 @@ function App() {
             const newDueDate = new Date((form.elements.namedItem('editDueDate') as HTMLInputElement).value);
             editTodo(editingTodo.id, newText, newDueDate);
           }}>
+            <label htmlFor="edit-text">Todo text:</label>
             <input
+              id="edit-text"
               type="text"
               name="editText"
               defaultValue={editingTodo.text}
             />
+            <label htmlFor="edit-due-date">Due date:</label>
             <input
+              id="edit-due-date"
               type="date"
               name="editDueDate"
               defaultValue={editingTodo.dueDate.toISOString().split('T')[0]}
@@ -452,6 +475,7 @@ function App() {
           </form>
         </div>
       )}
+      </main>
     </div>
   )
 }
